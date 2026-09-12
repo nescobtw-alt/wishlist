@@ -393,10 +393,10 @@
   <div class="brand">Наш вишлист · Кирюша &amp; Лерочка</div>
 
   <div class="banner" id="banner">
-    <strong>Общий список готов 💌</strong>
-    Чтобы видеть желания друг друга, откройте сайт по одной и той же ссылке на обоих телефонах.
+    <strong>Общий список пока не настроен 💌</strong>
+    1) Откройте jsonblob.com. 2) Вставьте туда <code>{"kiryusha":[],"lera":[]}</code> и нажмите Create/Save. 3) Скопируйте ID из адресной строки (после jsonblob.com/). 4) Вставьте его в файл сайта вместо PASTE_YOUR_JSONBLOB_ID_HERE. Пока это не сделано, желания сохраняются только в этом браузере.
     <div class="banner-actions">
-      <button class="copy-btn" id="copyLinkBtn">Скопировать ссылку</button>
+      <button class="copy-btn" id="copyLinkBtn">Скопировать заготовку JSON</button>
       <button class="dismiss-btn" id="dismissBanner">Понятно</button>
     </div>
   </div>
@@ -483,8 +483,11 @@
   "use strict";
 
   var API_BASE = "https://jsonblob.com/api/jsonBlob";
-  var LS_BLOB_KEY = "wishlist_blob_id";
   var LS_CACHE_KEY = "wishlist_cache";
+
+  // Вставьте сюда ID общего блока данных, который вы создали на jsonblob.com
+  // (инструкция — в баннере на странице, если оставить как есть).
+  var BLOB_ID = "PASTE_YOUR_JSONBLOB_ID_HERE";
 
   var state = {
     person: "lera",
@@ -519,17 +522,6 @@
 
   /* ---------------- storage ---------------- */
 
-  function getUrlBlob(){
-    var p = new URLSearchParams(location.search);
-    return p.get("list");
-  }
-
-  function setUrlBlob(id){
-    var url = new URL(location.href);
-    url.searchParams.set("list", id);
-    history.replaceState(null, "", url.toString());
-  }
-
   function cacheLocally(){
     try{ localStorage.setItem(LS_CACHE_KEY, JSON.stringify(state.data)); }catch(e){}
   }
@@ -543,42 +535,16 @@
   }
 
   function initStorage(){
-    var fromUrl = getUrlBlob();
-    if(fromUrl){
-      state.blobId = fromUrl;
-      try{ localStorage.setItem(LS_BLOB_KEY, fromUrl); }catch(e){}
-      return fetchRemote();
-    }
-    var fromLs = null;
-    try{ fromLs = localStorage.getItem(LS_BLOB_KEY); }catch(e){}
-    if(fromLs){
-      state.blobId = fromLs;
-      setUrlBlob(fromLs);
-      return fetchRemote();
-    }
-    return createRemote();
-  }
+    var cached = loadLocalCache();
+    if(cached) state.data = cached;
 
-  function createRemote(){
-    return fetch(API_BASE, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(state.data)
-    }).then(function(res){
-      var loc = res.headers.get("Location") || res.headers.get("location");
-      if(!loc){ throw new Error("no location"); }
-      var id = loc.split("/").pop();
-      state.blobId = id;
-      try{ localStorage.setItem(LS_BLOB_KEY, id); }catch(e){}
-      setUrlBlob(id);
+    if(!BLOB_ID || BLOB_ID === "PASTE_YOUR_JSONBLOB_ID_HERE"){
       $("banner").classList.add("show");
       render();
-    }).catch(function(){
-      toast("Не получилось создать общий список онлайн, работаем локально");
-      var cached = loadLocalCache();
-      if(cached) state.data = cached;
-      render();
-    });
+      return;
+    }
+    state.blobId = BLOB_ID;
+    fetchRemote();
   }
 
   function fetchRemote(){
@@ -873,16 +839,16 @@
   });
 
   $("copyLinkBtn").addEventListener("click", function(){
-    var url = location.href;
+    var snippet = '{"kiryusha":[],"lera":[]}';
     if(navigator.clipboard){
-      navigator.clipboard.writeText(url).then(function(){
-        toast("Ссылка скопирована");
-      }).catch(function(){ promptCopy(url); });
+      navigator.clipboard.writeText(snippet).then(function(){
+        toast("Заготовка скопирована — вставьте её на jsonblob.com");
+      }).catch(function(){ promptCopy(snippet); });
     } else {
-      promptCopy(url);
+      promptCopy(snippet);
     }
   });
-  function promptCopy(url){ prompt("Скопируйте ссылку:", url); }
+  function promptCopy(text){ prompt("Скопируйте текст:", text); }
 
   $("dismissBanner").addEventListener("click", function(){
     $("banner").classList.remove("show");
