@@ -6,8 +6,8 @@
 <title>Вишлист</title>
 
 <!-- Иконки сайта для браузера и телефонов -->
-<link rel="icon" type="image/jpeg" href="logo.jpg">
-<link rel="apple-touch-icon" href="logo.jpg">
+<link rel="icon" type="image/jpeg" href="logo.jpg?v=2">
+<link rel="apple-touch-icon" href="logo.jpg?v=2">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -138,8 +138,12 @@
     gap:12px;
     align-items:flex-start;
     animation:cardIn .35s ease both;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease;
   }
-  @keyframes cardIn{from{opacity:0; transform:scale(.97);} to{opacity:1; transform:scale(1);}}
+  .tag:active{
+    transform:scale(0.98);
+  }
 
   .tag-photo{
     width:52px; height:52px;
@@ -157,12 +161,26 @@
     margin:0 0 4px;
     word-break:break-word;
   }
+  .tag-meta{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:6px;
+  }
   .tag-hearts{
     display:flex;
     gap:3px;
-    margin-bottom:6px;
   }
   .tag-hearts svg{width:15px; height:15px;}
+  .tag-price{
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--gold);
+    background:rgba(203,154,78,0.12);
+    padding:2px 6px;
+    border-radius:6px;
+  }
+
   .tag-link{
     display:inline-block;
     font-size:12.5px;
@@ -299,7 +317,7 @@
     color:var(--text-soft);
     margin-bottom:6px;
   }
-  .field input[type=text], .field input[type=url]{
+  .field input[type=text], .field input[type=number], .field input[type=url]{
     width:100%;
     border:1px solid var(--edge);
     border-radius:12px;
@@ -346,6 +364,48 @@
   }
   .btn-primary{background:var(--accent); color:#fff;}
   .btn-ghost{background:transparent; color:var(--text-soft);}
+
+  /* ---------- Detail View Modal ---------- */
+  .view-card{text-align:center;}
+  .view-img{
+    width:100%;
+    max-height:260px;
+    object-fit:cover;
+    border-radius:14px;
+    margin-bottom:14px;
+    border:1px solid var(--edge);
+  }
+  .view-title{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:22px;
+    margin:0 0 8px;
+    word-break:break-word;
+  }
+  .view-price{
+    font-size:18px;
+    font-weight:600;
+    color:var(--gold);
+    margin-bottom:10px;
+  }
+  .view-hearts{
+    display:flex;
+    justify-content:center;
+    gap:4px;
+    margin-bottom:14px;
+  }
+  .view-hearts svg{width:22px; height:22px;}
+  .view-link-btn{
+    display:inline-block;
+    padding:10px 18px;
+    background:var(--accent-soft);
+    color:var(--accent);
+    border-radius:12px;
+    font-weight:600;
+    text-decoration:none;
+    margin-top:8px;
+    font-size:14px;
+  }
 
   /* ---------- Onboarding banner & toast ---------- */
   .banner{
@@ -419,6 +479,7 @@
   <div class="sortbar">
     <select id="sortSelect">
       <option value="hearts">Сначала сильные желания</option>
+      <option value="price_asc">Сначала недорогие</option>
       <option value="added">По порядку добавления</option>
     </select>
   </div>
@@ -427,6 +488,7 @@
 
 </div>
 
+<!-- Подтверждение удаления -->
 <div class="confirm-overlay" id="confirmOverlay">
   <div class="confirm-box">
     <p>Удалить это желание?</p>
@@ -439,12 +501,17 @@
 
 <button class="fab" id="fabAdd" aria-label="Добавить желание">+</button>
 
+<!-- Форма создания / редактирования -->
 <div class="overlay" id="overlay">
   <div class="sheet">
     <h2 id="sheetTitle">Новое желание</h2>
     <div class="field">
       <label for="wishTitle">Что хочется</label>
       <input type="text" id="wishTitle" maxlength="120" placeholder="Например: тёплый шарф">
+    </div>
+    <div class="field">
+      <label for="wishPrice">Примерная цена (₽, необязательно)</label>
+      <input type="number" id="wishPrice" min="0" placeholder="Например: 2500">
     </div>
     <div class="field">
       <label>Насколько сильно</label>
@@ -481,6 +548,17 @@
   </div>
 </div>
 
+<!-- Модальное окно просмотра -->
+<div class="overlay" id="viewOverlay">
+  <div class="sheet">
+    <div class="view-card" id="viewCardBody"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="closeViewBtn">Закрыть</button>
+      <button class="btn btn-primary" id="viewEditBtn">Редактировать</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -491,8 +569,6 @@
   var API_BASE = "https://jsonblob.com/api/jsonBlob";
   var LS_CACHE_KEY = "wishlist_cache";
 
-  // Вставьте сюда ID общего блока данных, который вы создали на jsonblob.com
-  // (инструкция — в баннере на странице, если оставить как есть).
   var BLOB_ID = "https://jsonblob.com/01a095a3-0348-7179-905d-94413892a492/json";
 
   var state = {
@@ -502,6 +578,7 @@
     heartsPick: 1,
     photoData: null,
     editingId: null,
+    viewingId: null,
     sortMode: "hearts",
     lastLocalWriteAt: 0,
     pendingDeleteId: null
@@ -526,10 +603,13 @@
     return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
   }
 
+  function formatPrice(val){
+    if(val === null || val === undefined || val === "" || isNaN(val)) return "";
+    return Number(val).toLocaleString('ru-RU') + " ₽";
+  }
+
   /* ---------------- storage: Supabase ---------------- */
 
-  // 1. Создайте проект в Supabase.
-  // 2. Вставьте сюда Project URL и Publishable key.
   var SUPABASE_URL = "https://oqbffkecrcocqncktwqm.supabase.co";
   var SUPABASE_KEY = "sb_publishable_yK2R5-bvtnDaGgmkQyBgZA_caEvSrRZ";
 
@@ -591,8 +671,6 @@
         state.data = normalize(result.data.data);
         cacheLocally();
       }else{
-        // Первый телефон, который откроет сайт, переносит существующие
-        // локальные данные в облако. Если локально пусто — создаётся пустой список.
         state.data = normalize(state.data);
         await writeCloudNow();
       }
@@ -644,7 +722,6 @@
 
     if(!supabaseClient) return Promise.resolve(false);
 
-    // Если несколько действий сделаны подряд, сохраняем последнюю версию.
     clearTimeout(saveTimer);
     return new Promise(function(resolve){
       saveTimer = setTimeout(async function(){
@@ -671,7 +748,6 @@
           filter: "id=eq.main"
         },
         function(payload){
-          // Не перезаписываем данные собственным недавним сохранением.
           if(Date.now() - state.lastLocalWriteAt < 1200) return;
 
           var incoming = payload.new && payload.new.data;
@@ -685,7 +761,6 @@
       .subscribe();
   }
 
-  // Если страница снова становится видимой, проверяем актуальные данные.
   document.addEventListener("visibilitychange", async function(){
     if(document.visibilityState !== "visible" || !supabaseClient || saving) return;
 
@@ -732,6 +807,15 @@
           return a.idx - b.idx;
         })
         .map(function(pair){ return pair.item; });
+    } else if(state.sortMode === "price_asc"){
+      items = items.map(function(item, idx){ return {item:item, idx:idx}; })
+        .sort(function(a,b){
+          var pA = (a.item.price !== null && a.item.price !== "" && !isNaN(a.item.price)) ? Number(a.item.price) : Infinity;
+          var pB = (b.item.price !== null && b.item.price !== "" && !isNaN(b.item.price)) ? Number(b.item.price) : Infinity;
+          if(pA !== pB) return pA - pB;
+          return a.idx - b.idx;
+        })
+        .map(function(pair){ return pair.item; });
     }
 
     listEl.innerHTML = "";
@@ -744,18 +828,24 @@
     items.forEach(function(item){
       var tag = document.createElement("div");
       tag.className = "tag";
+      tag.dataset.id = item.id;
 
       var heartsHtml = "";
       for(var i=1;i<=3;i++){ heartsHtml += heartsSvg(i <= item.hearts); }
 
       var photoHtml = item.photo ? '<img class="tag-photo" src="'+item.photo+'" alt="">' : "";
       var linkHtml = item.link ? '<a class="tag-link" href="'+escapeAttr(item.link)+'" target="_blank" rel="noopener">Открыть ссылку</a>' : "";
+      var priceFormatted = formatPrice(item.price);
+      var priceHtml = priceFormatted ? '<span class="tag-price">'+priceFormatted+'</span>' : "";
 
       tag.innerHTML =
         photoHtml +
         '<div class="tag-body">' +
           '<p class="tag-title">'+escapeHtml(item.title)+'</p>' +
-          '<div class="tag-hearts">'+heartsHtml+'</div>' +
+          '<div class="tag-meta">' +
+            '<div class="tag-hearts">'+heartsHtml+'</div>' +
+            priceHtml +
+          '</div>' +
           linkHtml +
         '</div>' +
         '<div class="tag-actions">' +
@@ -790,13 +880,64 @@
   $("list").addEventListener("click", function(e){
     var editBtn = e.target.closest(".tag-edit");
     if(editBtn){
+      e.stopPropagation();
       openEditForm(editBtn.dataset.id);
       return;
     }
     var delBtn = e.target.closest(".tag-del");
     if(delBtn){
+      e.stopPropagation();
       state.pendingDeleteId = delBtn.dataset.id;
       $("confirmOverlay").classList.add("open");
+      return;
+    }
+    var linkBtn = e.target.closest(".tag-link");
+    if(linkBtn){
+      e.stopPropagation();
+      return;
+    }
+    var tag = e.target.closest(".tag");
+    if(tag && tag.dataset.id){
+      openViewModal(tag.dataset.id);
+    }
+  });
+
+  /* View Mode */
+  function openViewModal(id){
+    var item = state.data[state.person].find(function(w){ return w.id === id; });
+    if(!item) return;
+    state.viewingId = id;
+
+    var heartsHtml = "";
+    for(var i=1;i<=3;i++){ heartsHtml += heartsSvg(i <= item.hearts); }
+
+    var imgHtml = item.photo ? '<img class="view-img" src="'+item.photo+'" alt="">' : '';
+    var priceFormatted = formatPrice(item.price);
+    var priceHtml = priceFormatted ? '<div class="view-price">'+priceFormatted+'</div>' : '';
+    var linkHtml = item.link ? '<a class="view-link-btn" href="'+escapeAttr(item.link)+'" target="_blank" rel="noopener">Перейти по ссылке ↗</a>' : '';
+
+    $("viewCardBody").innerHTML =
+      imgHtml +
+      '<h3 class="view-title">'+escapeHtml(item.title)+'</h3>' +
+      priceHtml +
+      '<div class="view-hearts">'+heartsHtml+'</div>' +
+      linkHtml;
+
+    $("viewOverlay").classList.add("open");
+  }
+
+  $("closeViewBtn").addEventListener("click", function(){
+    $("viewOverlay").classList.remove("open");
+  });
+  $("viewOverlay").addEventListener("click", function(e){
+    if(e.target === $("viewOverlay")){
+      $("viewOverlay").classList.remove("open");
+    }
+  });
+  $("viewEditBtn").addEventListener("click", function(){
+    $("viewOverlay").classList.remove("open");
+    if(state.viewingId){
+      openEditForm(state.viewingId);
     }
   });
 
@@ -828,6 +969,7 @@
     $("sheetTitle").textContent = "Редактировать желание";
     $("saveWish").textContent = "Сохранить";
     $("wishTitle").value = item.title;
+    $("wishPrice").value = item.price !== undefined && item.price !== null ? item.price : "";
     $("wishLink").value = item.link || "";
     state.photoData = item.photo || null;
     if(item.photo){
@@ -851,6 +993,7 @@
     $("sheetTitle").textContent = "Новое желание";
     $("saveWish").textContent = "Добавить";
     $("wishTitle").value = "";
+    $("wishPrice").value = "";
     $("wishLink").value = "";
     $("photoInput").value = "";
     $("photoPreview").style.display = "none";
@@ -923,6 +1066,8 @@
       toast("Напиши, что хочется :)");
       return;
     }
+    var priceRaw = $("wishPrice").value.trim();
+    var price = priceRaw !== "" ? Number(priceRaw) : null;
     var link = $("wishLink").value.trim() || null;
     var photo = state.photoData || null;
 
@@ -930,6 +1075,7 @@
       var idx = state.data[state.person].findIndex(function(w){ return w.id === state.editingId; });
       if(idx !== -1){
         state.data[state.person][idx].title = title;
+        state.data[state.person][idx].price = price;
         state.data[state.person][idx].hearts = state.heartsPick;
         state.data[state.person][idx].link = link;
         state.data[state.person][idx].photo = photo;
@@ -939,6 +1085,7 @@
       state.data[state.person].push({
         id: uid(),
         title: title,
+        price: price,
         hearts: state.heartsPick,
         link: link,
         photo: photo
