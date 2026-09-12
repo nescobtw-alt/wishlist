@@ -393,10 +393,10 @@
   <div class="brand">Наш вишлист · Кирюша &amp; Лерочка</div>
 
   <div class="banner" id="banner">
-    <strong>Общий список пока не настроен 💌</strong>
-    1) Откройте jsonblob.com. 2) Вставьте туда <code>{"kiryusha":[],"lera":[]}</code> и нажмите Create/Save. 3) Скопируйте ID из адресной строки (после jsonblob.com/). 4) Вставьте его в файл сайта вместо https://jsonblob.com/01a095a3-0348-7179-905d-94413892a492/json. Пока это не сделано, желания сохраняются только в этом браузере.
+    <strong>Облако пока не настроено</strong>
+    Откройте файл и укажите SUPABASE_URL и SUPABASE_KEY в разделе «storage: Supabase». После настройки данные будут храниться в облаке и синхронизироваться между телефонами.
     <div class="banner-actions">
-      <button class="copy-btn" id="copyLinkBtn">Скопировать заготовку JSON</button>
+      <button class="copy-btn" id="copyLinkBtn">Что нужно вставить?</button>
       <button class="dismiss-btn" id="dismissBanner">Понятно</button>
     </div>
   </div>
@@ -478,6 +478,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
   "use strict";
@@ -520,10 +521,24 @@
     return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
   }
 
-  /* ---------------- storage ---------------- */
+  /* ---------------- storage: Supabase ---------------- */
+
+  // 1. Создайте проект в Supabase.
+  // 2. Вставьте сюда Project URL и Publishable key.
+  var SUPABASE_URL = "PASTE_YOUR_SUPABASE_URL_HERE";
+  var SUPABASE_KEY = "PASTE_YOUR_SUPABASE_PUBLISHABLE_KEY_HERE";
+
+  var CLOUD_ROW_ID = "main";
+  var supabaseClient = null;
+  var realtimeChannel = null;
+  var cloudReady = false;
+  var saving = false;
+  var saveTimer = null;
 
   function cacheLocally(){
-    try{ localStorage.setItem(LS_CACHE_KEY, JSON.stringify(state.data)); }catch(e){}
+    try{
+      localStorage.setItem(LS_CACHE_KEY, JSON.stringify(state.data));
+    }catch(e){}
   }
 
   function loadLocalCache(){
@@ -534,38 +549,6 @@
     return null;
   }
 
-  function initStorage(){
-    var cached = loadLocalCache();
-    if(cached) state.data = cached;
-
-    if(!BLOB_ID || BLOB_ID === "https://jsonblob.com/01a095a3-0348-7179-905d-94413892a492/json"){
-      $("banner").classList.add("show");
-      render();
-      return;
-    }
-    state.blobId = BLOB_ID;
-    fetchRemote();
-  }
-
-  function fetchRemote(){
-    return fetch(API_BASE + "/" + state.blobId)
-      .then(function(res){
-        if(!res.ok) throw new Error("fetch failed");
-        return res.json();
-      })
-      .then(function(json){
-        state.data = normalize(json);
-        cacheLocally();
-        render();
-      })
-      .catch(function(){
-        var cached = loadLocalCache();
-        if(cached) state.data = normalize(cached);
-        toast("Не удалось загрузить онлайн-список, показаны сохранённые данные");
-        render();
-      });
-  }
-
   function normalize(json){
     return {
       kiryusha: Array.isArray(json && json.kiryusha) ? json.kiryusha : [],
@@ -573,21 +556,146 @@
     };
   }
 
+  function cloudConfigured(){
+    return SUPABASE_URL.indexOf("PASTE_") !== 0 &&
+           SUPABASE_KEY.indexOf("PASTE_") !== 0;
+  }
+
+  async function initStorage(){
+    var cached = loadLocalCache();
+    if(cached) state.data = normalize(cached);
+
+    if(!cloudConfigured()){
+      $("banner").classList.add("show");
+      render();
+      return;
+    }
+
+    try{
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      var result = await supabaseClient
+        .from("wishlist")
+        .select("data")
+        .eq("id", CLOUD_ROW_ID)
+        .maybeSingle();
+
+      if(result.error) throw result.error;
+
+      if(result.data){
+        state.data = normalize(result.data.data);
+        cacheLocally();
+      }else{
+        // Первый телефон, который откроет сайт, переносит существующие
+        // локальные данные в облако. Если локально пусто — создаётся пустой список.
+        state.data = normalize(state.data);
+        await writeCloudNow();
+      }
+
+      cloudReady = true;
+      $("banner").classList.remove("show");
+      render();
+      subscribeRealtime();
+
+    }catch(error){
+      console.error("Supabase:", error);
+      var local = loadLocalCache();
+      if(local) state.data = normalize(local);
+      $("banner").classList.add("show");
+      toast("Не удалось подключиться к облаку");
+      render();
+    }
+  }
+
+  async function writeCloudNow(){
+    if(!supabaseClient) return false;
+
+    saving = true;
+    state.lastLocalWriteAt = Date.now();
+
+    var result = await supabaseClient
+      .from("wishlist")
+      .upsert({
+        id: CLOUD_ROW_ID,
+        data: state.data,
+        updated_at: new Date().toISOString()
+      }, { onConflict: "id" });
+
+    saving = false;
+
+    if(result.error){
+      console.error("Supabase save:", result.error);
+      toast("Сохранено на телефоне, но не в облаке");
+      return false;
+    }
+
+    cacheLocally();
+    return true;
+  }
+
   function pushRemote(){
     cacheLocally();
     state.lastLocalWriteAt = Date.now();
-    if(!state.blobId) return;
-    return fetch(API_BASE + "/" + state.blobId, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(state.data)
-    }).then(function(){
-      state.lastLocalWriteAt = Date.now();
-    }).catch(function(){
-      state.lastLocalWriteAt = Date.now();
-      toast("Сохранено локально, не удалось синхронизировать");
+
+    if(!supabaseClient) return Promise.resolve(false);
+
+    // Если несколько действий сделаны подряд, сохраняем последнюю версию.
+    clearTimeout(saveTimer);
+    return new Promise(function(resolve){
+      saveTimer = setTimeout(async function(){
+        resolve(await writeCloudNow());
+      }, 150);
     });
   }
+
+  function subscribeRealtime(){
+    if(!supabaseClient) return;
+
+    if(realtimeChannel){
+      supabaseClient.removeChannel(realtimeChannel);
+    }
+
+    realtimeChannel = supabaseClient
+      .channel("wishlist-sync")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "wishlist",
+          filter: "id=eq.main"
+        },
+        function(payload){
+          // Не перезаписываем данные собственным недавним сохранением.
+          if(Date.now() - state.lastLocalWriteAt < 1200) return;
+
+          var incoming = payload.new && payload.new.data;
+          if(!incoming) return;
+
+          state.data = normalize(incoming);
+          cacheLocally();
+          render();
+        }
+      )
+      .subscribe();
+  }
+
+  // Если страница снова становится видимой, проверяем актуальные данные.
+  document.addEventListener("visibilitychange", async function(){
+    if(document.visibilityState !== "visible" || !supabaseClient || saving) return;
+
+    var result = await supabaseClient
+      .from("wishlist")
+      .select("data")
+      .eq("id", CLOUD_ROW_ID)
+      .maybeSingle();
+
+    if(!result.error && result.data && Date.now() - state.lastLocalWriteAt >= 1200){
+      state.data = normalize(result.data.data);
+      cacheLocally();
+      render();
+    }
+  });
 
   /* ---------------- render ---------------- */
 
@@ -839,16 +947,13 @@
   });
 
   $("copyLinkBtn").addEventListener("click", function(){
-    var snippet = '{"kiryusha":[],"lera":[]}';
-    if(navigator.clipboard){
-      navigator.clipboard.writeText(snippet).then(function(){
-        toast("Заготовка скопирована — вставьте её на jsonblob.com");
-      }).catch(function(){ promptCopy(snippet); });
-    } else {
-      promptCopy(snippet);
-    }
+    alert(
+      "Нужно вставить в код два значения из Supabase:\\n\\n" +
+      "SUPABASE_URL = адрес проекта\\n" +
+      "SUPABASE_KEY = Publishable key\\n\\n" +
+      "После этого загрузите index.html на GitHub."
+    );
   });
-  function promptCopy(text){ prompt("Скопируйте текст:", text); }
 
   $("dismissBanner").addEventListener("click", function(){
     $("banner").classList.remove("show");
