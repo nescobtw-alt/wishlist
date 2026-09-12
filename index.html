@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Наш вишлист</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FBF2ED;
+    --surface:#FFFDFB;
+    --edge:#F0DDD3;
+    --text:#453640;
+    --text-soft:#8B7A83;
+    --gold:#CB9A4E;
+    --gold-soft:#E7D3AE;
+    --lera:#E1748F;
+    --lera-soft:#FBE3E9;
+    --kir:#6E80B8;
+    --kir-soft:#E6E9F5;
+    --danger:#B85C5C;
+    --radius:18px;
+    --accent: var(--lera);
+    --accent-soft: var(--lera-soft);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Work Sans', sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background:
+      radial-gradient(circle at 12% 8%, rgba(225,116,143,0.10), transparent 40%),
+      radial-gradient(circle at 90% 85%, rgba(110,128,184,0.10), transparent 42%);
+    pointer-events:none;
+    z-index:0;
+  }
+
+  .app{
+    width:100%;
+    max-width:480px;
+    min-height:100vh;
+    position:relative;
+    z-index:1;
+    padding:22px 18px 110px;
+  }
+
+  a{color:inherit;}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px;}
+
+  /* ---------- Header ---------- */
+  .brand{
+    text-align:center;
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-weight:500;
+    font-size:15px;
+    color:var(--text-soft);
+    letter-spacing:0.01em;
+    margin-bottom:18px;
+  }
+
+  .switch{
+    display:flex;
+    background:var(--surface);
+    border:1px solid var(--edge);
+    border-radius:999px;
+    padding:4px;
+    gap:4px;
+    box-shadow:0 2px 10px rgba(69,54,64,0.05);
+  }
+  .switch button{
+    flex:1;
+    border:none;
+    background:transparent;
+    padding:11px 10px;
+    border-radius:999px;
+    font-family:'Work Sans', sans-serif;
+    font-weight:600;
+    font-size:14.5px;
+    color:var(--text-soft);
+    cursor:pointer;
+    transition:background .25s ease, color .25s ease;
+  }
+  .switch button.active.lera{background:var(--lera-soft); color:#9c3f57;}
+  .switch button.active.kir{background:var(--kir-soft); color:#3f4f82;}
+
+  .hero{
+    margin:26px 4px 20px;
+    animation:heroIn .6s ease both;
+  }
+  @keyframes heroIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+  .hero h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:30px;
+    margin:0 0 4px;
+    color:var(--text);
+  }
+  .hero p{
+    margin:0;
+    font-size:14px;
+    color:var(--text-soft);
+  }
+
+  /* ---------- Cards (gift tags) ---------- */
+  .list{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+
+  .tag{
+    position:relative;
+    background:var(--surface);
+    border:1px solid var(--edge);
+    border-left:3px solid var(--accent);
+    border-radius:var(--radius);
+    padding:16px;
+    box-shadow:0 3px 14px rgba(69,54,64,0.06);
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+    animation:cardIn .35s ease both;
+  }
+  @keyframes cardIn{from{opacity:0; transform:scale(.97);} to{opacity:1; transform:scale(1);}}
+
+  .tag-photo{
+    width:52px; height:52px;
+    border-radius:12px;
+    object-fit:cover;
+    flex-shrink:0;
+    border:1px solid var(--edge);
+  }
+
+  .tag-body{flex:1; min-width:0;}
+  .tag-title{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:17px;
+    margin:0 0 4px;
+    word-break:break-word;
+  }
+  .tag-hearts{
+    display:flex;
+    gap:3px;
+    margin-bottom:6px;
+  }
+  .tag-hearts svg{width:15px; height:15px;}
+  .tag-link{
+    display:inline-block;
+    font-size:12.5px;
+    color:var(--accent);
+    text-decoration:none;
+    border-bottom:1px solid currentColor;
+    margin-top:2px;
+  }
+
+  .tag-actions{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    flex-shrink:0;
+  }
+  .tag-edit, .tag-del{
+    border:none;
+    background:transparent;
+    color:var(--text-soft);
+    cursor:pointer;
+    padding:6px;
+    border-radius:8px;
+  }
+  .tag-edit:hover{color:var(--accent); background:var(--accent-soft);}
+  .tag-del:hover{color:var(--danger); background:#F6E4E2;}
+
+  /* ---------- Sort control ---------- */
+  .sortbar{
+    display:flex;
+    justify-content:flex-end;
+    margin:-8px 4px 14px;
+  }
+  .sortbar select{
+    border:1px solid var(--edge);
+    background:var(--surface);
+    color:var(--text-soft);
+    font-family:'Work Sans', sans-serif;
+    font-size:12.5px;
+    font-weight:500;
+    padding:7px 10px;
+    border-radius:10px;
+    cursor:pointer;
+  }
+
+  /* ---------- Custom confirm ---------- */
+  .confirm-overlay{
+    position:fixed; inset:0;
+    background:rgba(69,54,64,0.32);
+    z-index:15;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .confirm-overlay.open{display:flex;}
+  .confirm-box{
+    background:var(--surface);
+    border-radius:16px;
+    padding:20px;
+    max-width:320px;
+    width:100%;
+    text-align:center;
+    box-shadow:0 10px 30px rgba(69,54,64,0.2);
+  }
+  .confirm-box p{
+    font-size:14.5px;
+    margin:0 0 16px;
+    color:var(--text);
+  }
+  .confirm-actions{display:flex; gap:10px;}
+
+  .empty{
+    text-align:center;
+    padding:48px 20px;
+    color:var(--text-soft);
+    font-size:14.5px;
+    line-height:1.6;
+  }
+  .empty span{display:block; font-size:32px; margin-bottom:8px;}
+
+  /* ---------- FAB ---------- */
+  .fab{
+    position:fixed;
+    bottom:26px;
+    right:50%;
+    transform:translateX(190px);
+    width:56px; height:56px;
+    border-radius:50%;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    font-size:26px;
+    line-height:56px;
+    box-shadow:0 8px 20px rgba(69,54,64,0.22);
+    cursor:pointer;
+    z-index:5;
+    transition:background .25s ease;
+  }
+  @media (max-width:480px){
+    .fab{ right:24px; transform:none; }
+  }
+
+  /* ---------- Sheet / modal ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(69,54,64,0.32);
+    z-index:10;
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+  }
+  .overlay.open{display:flex;}
+  .sheet{
+    width:100%;
+    max-width:480px;
+    background:var(--surface);
+    border-radius:22px 22px 0 0;
+    padding:20px 20px calc(20px + env(safe-area-inset-bottom));
+    animation:sheetUp .3s ease;
+    max-height:88vh;
+    overflow-y:auto;
+  }
+  @keyframes sheetUp{from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+  .sheet h2{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:20px;
+    margin:2px 0 16px;
+  }
+  .field{margin-bottom:14px;}
+  .field label{
+    display:block;
+    font-size:12.5px;
+    color:var(--text-soft);
+    margin-bottom:6px;
+  }
+  .field input[type=text], .field input[type=url]{
+    width:100%;
+    border:1px solid var(--edge);
+    border-radius:12px;
+    padding:11px 12px;
+    font-size:15px;
+    font-family:'Work Sans', sans-serif;
+    background:#fff;
+    color:var(--text);
+  }
+  .heart-picker{display:flex; gap:10px;}
+  .heart-picker button{
+    border:none; background:transparent; cursor:pointer; padding:4px;
+  }
+  .heart-picker svg{width:30px; height:30px;}
+
+  .photo-row{display:flex; align-items:center; gap:12px;}
+  .photo-preview{
+    width:52px; height:52px; border-radius:12px;
+    object-fit:cover; border:1px solid var(--edge);
+    display:none;
+  }
+  .file-btn{
+    border:1px dashed var(--edge);
+    background:#fff;
+    border-radius:12px;
+    padding:10px 14px;
+    font-size:13.5px;
+    color:var(--text-soft);
+    cursor:pointer;
+  }
+
+  .sheet-actions{
+    display:flex; gap:10px; margin-top:18px;
+  }
+  .btn{
+    flex:1;
+    border:none;
+    border-radius:12px;
+    padding:13px;
+    font-family:'Work Sans', sans-serif;
+    font-weight:600;
+    font-size:15px;
+    cursor:pointer;
+  }
+  .btn-primary{background:var(--accent); color:#fff;}
+  .btn-ghost{background:transparent; color:var(--text-soft);}
+
+  /* ---------- Onboarding banner & toast ---------- */
+  .banner{
+    background:var(--gold-soft);
+    border:1px solid var(--gold);
+    color:#5c451c;
+    border-radius:14px;
+    padding:14px;
+    font-size:13px;
+    line-height:1.5;
+    margin-bottom:18px;
+    display:none;
+  }
+  .banner.show{display:block;}
+  .banner strong{display:block; margin-bottom:6px; font-size:13.5px;}
+  .banner-actions{display:flex; gap:8px; margin-top:10px;}
+  .banner-actions button{
+    border:none; border-radius:10px; padding:8px 12px;
+    font-size:12.5px; font-weight:600; cursor:pointer;
+  }
+  .copy-btn{background:#5c451c; color:#fff;}
+  .dismiss-btn{background:transparent; color:#5c451c; text-decoration:underline;}
+
+  .toast{
+    position:fixed;
+    bottom:96px;
+    left:50%;
+    transform:translateX(-50%) translateY(10px);
+    background:var(--text);
+    color:#fff;
+    padding:10px 16px;
+    border-radius:999px;
+    font-size:13px;
+    opacity:0;
+    transition:opacity .25s ease, transform .25s ease;
+    z-index:20;
+    max-width:88%;
+    text-align:center;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="brand">Наш вишлист · Кирюша &amp; Лерочка</div>
+
+  <div class="banner" id="banner">
+    <strong>Общий список готов 💌</strong>
+    Чтобы видеть желания друг друга, откройте сайт по одной и той же ссылке на обоих телефонах.
+    <div class="banner-actions">
+      <button class="copy-btn" id="copyLinkBtn">Скопировать ссылку</button>
+      <button class="dismiss-btn" id="dismissBanner">Понятно</button>
+    </div>
+  </div>
+
+  <div class="switch">
+    <button class="kir" data-person="kiryusha">Кирюша</button>
+    <button class="lera" data-person="lera">Лерочка</button>
+  </div>
+
+  <div class="hero">
+    <h1 id="heroTitle">Желания Лерочки</h1>
+    <p id="heroSub">Всё, что она хотела бы получить</p>
+  </div>
+
+  <div class="sortbar">
+    <select id="sortSelect">
+      <option value="hearts">Сначала сильные желания</option>
+      <option value="added">По порядку добавления</option>
+    </select>
+  </div>
+
+  <div class="list" id="list"></div>
+
+</div>
+
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <p>Удалить это желание?</p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" id="confirmNo">Отмена</button>
+      <button class="btn btn-primary" id="confirmYes" style="background:var(--danger)">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<button class="fab" id="fabAdd" aria-label="Добавить желание">+</button>
+
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <h2 id="sheetTitle">Новое желание</h2>
+    <div class="field">
+      <label for="wishTitle">Что хочется</label>
+      <input type="text" id="wishTitle" maxlength="120" placeholder="Например: тёплый шарф">
+    </div>
+    <div class="field">
+      <label>Насколько сильно</label>
+      <div class="heart-picker" id="heartPicker">
+        <button type="button" data-v="1" aria-label="1 сердечко">
+          <svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.8-10-9.3C.4 8.4 1.9 5 5.2 5c2 0 3.3 1.1 4 2.1.6.9.8.9 1.6 0C11.5 6.1 12.8 5 14.8 5c3.3 0 4.8 3.4 3.2 6.7C19.5 16.2 12 21 12 21z" fill="none" stroke="#CB9A4E" stroke-width="1.6"/></svg>
+        </button>
+        <button type="button" data-v="2" aria-label="2 сердечка">
+          <svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.8-10-9.3C.4 8.4 1.9 5 5.2 5c2 0 3.3 1.1 4 2.1.6.9.8.9 1.6 0C11.5 6.1 12.8 5 14.8 5c3.3 0 4.8 3.4 3.2 6.7C19.5 16.2 12 21 12 21z" fill="none" stroke="#CB9A4E" stroke-width="1.6"/></svg>
+        </button>
+        <button type="button" data-v="3" aria-label="3 сердечка">
+          <svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.8-10-9.3C.4 8.4 1.9 5 5.2 5c2 0 3.3 1.1 4 2.1.6.9.8.9 1.6 0C11.5 6.1 12.8 5 14.8 5c3.3 0 4.8 3.4 3.2 6.7C19.5 16.2 12 21 12 21z" fill="none" stroke="#CB9A4E" stroke-width="1.6"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="wishLink">Ссылка (необязательно)</label>
+      <input type="url" id="wishLink" placeholder="https://...">
+    </div>
+    <div class="field">
+      <label>Фото из галереи (необязательно)</label>
+      <div class="photo-row">
+        <img class="photo-preview" id="photoPreview" alt="">
+        <label class="file-btn">
+          Выбрать фото
+          <input type="file" accept="image/*" id="photoInput" style="display:none">
+        </label>
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="cancelAdd">Отмена</button>
+      <button class="btn btn-primary" id="saveWish">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var API_BASE = "https://jsonblob.com/api/jsonBlob";
+  var LS_BLOB_KEY = "wishlist_blob_id";
+  var LS_CACHE_KEY = "wishlist_cache";
+
+  var state = {
+    person: "lera",
+    data: { kiryusha: [], lera: [] },
+    blobId: null,
+    heartsPick: 1,
+    photoData: null,
+    editingId: null,
+    sortMode: "hearts",
+    lastLocalWriteAt: 0,
+    pendingDeleteId: null
+  };
+
+  var PERSON_META = {
+    lera:     { title: "Желания Лерочки", sub: "Всё, что она хотела бы получить", accentVar: "--lera", softVar: "--lera-soft" },
+    kiryusha: { title: "Желания Кирюши",  sub: "Всё, что он хотел бы получить",   accentVar: "--kir",  softVar: "--kir-soft" }
+  };
+
+  var $ = function(id){ return document.getElementById(id); };
+
+  function toast(msg){
+    var t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function(){ t.classList.remove("show"); }, 2600);
+  }
+
+  function uid(){
+    return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  }
+
+  /* ---------------- storage ---------------- */
+
+  function getUrlBlob(){
+    var p = new URLSearchParams(location.search);
+    return p.get("list");
+  }
+
+  function setUrlBlob(id){
+    var url = new URL(location.href);
+    url.searchParams.set("list", id);
+    history.replaceState(null, "", url.toString());
+  }
+
+  function cacheLocally(){
+    try{ localStorage.setItem(LS_CACHE_KEY, JSON.stringify(state.data)); }catch(e){}
+  }
+
+  function loadLocalCache(){
+    try{
+      var raw = localStorage.getItem(LS_CACHE_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return null;
+  }
+
+  function initStorage(){
+    var fromUrl = getUrlBlob();
+    if(fromUrl){
+      state.blobId = fromUrl;
+      try{ localStorage.setItem(LS_BLOB_KEY, fromUrl); }catch(e){}
+      return fetchRemote();
+    }
+    var fromLs = null;
+    try{ fromLs = localStorage.getItem(LS_BLOB_KEY); }catch(e){}
+    if(fromLs){
+      state.blobId = fromLs;
+      setUrlBlob(fromLs);
+      return fetchRemote();
+    }
+    return createRemote();
+  }
+
+  function createRemote(){
+    return fetch(API_BASE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(state.data)
+    }).then(function(res){
+      var loc = res.headers.get("Location") || res.headers.get("location");
+      if(!loc){ throw new Error("no location"); }
+      var id = loc.split("/").pop();
+      state.blobId = id;
+      try{ localStorage.setItem(LS_BLOB_KEY, id); }catch(e){}
+      setUrlBlob(id);
+      $("banner").classList.add("show");
+      render();
+    }).catch(function(){
+      toast("Не получилось создать общий список онлайн, работаем локально");
+      var cached = loadLocalCache();
+      if(cached) state.data = cached;
+      render();
+    });
+  }
+
+  function fetchRemote(){
+    return fetch(API_BASE + "/" + state.blobId)
+      .then(function(res){
+        if(!res.ok) throw new Error("fetch failed");
+        return res.json();
+      })
+      .then(function(json){
+        state.data = normalize(json);
+        cacheLocally();
+        render();
+      })
+      .catch(function(){
+        var cached = loadLocalCache();
+        if(cached) state.data = normalize(cached);
+        toast("Не удалось загрузить онлайн-список, показаны сохранённые данные");
+        render();
+      });
+  }
+
+  function normalize(json){
+    return {
+      kiryusha: Array.isArray(json && json.kiryusha) ? json.kiryusha : [],
+      lera: Array.isArray(json && json.lera) ? json.lera : []
+    };
+  }
+
+  function pushRemote(){
+    cacheLocally();
+    state.lastLocalWriteAt = Date.now();
+    if(!state.blobId) return;
+    return fetch(API_BASE + "/" + state.blobId, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(state.data)
+    }).then(function(){
+      state.lastLocalWriteAt = Date.now();
+    }).catch(function(){
+      state.lastLocalWriteAt = Date.now();
+      toast("Сохранено локально, не удалось синхронизировать");
+    });
+  }
+
+  /* ---------------- render ---------------- */
+
+  function heartsSvg(filled){
+    var color = filled ? "#CB9A4E" : "#DDD1D8";
+    var fill = filled ? "#CB9A4E" : "none";
+    return '<svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.8-10-9.3C.4 8.4 1.9 5 5.2 5c2 0 3.3 1.1 4 2.1.6.9.8.9 1.6 0C11.5 6.1 12.8 5 14.8 5c3.3 0 4.8 3.4 3.2 6.7C19.5 16.2 12 21 12 21z" fill="'+fill+'" stroke="'+color+'" stroke-width="1.6"/></svg>';
+  }
+
+  function render(){
+    var meta = PERSON_META[state.person];
+    $("heroTitle").textContent = meta.title;
+    $("heroSub").textContent = meta.sub;
+    document.documentElement.style.setProperty("--accent", "var(" + meta.accentVar + ")");
+    document.documentElement.style.setProperty("--accent-soft", "var(" + meta.softVar + ")");
+
+    document.querySelectorAll(".switch button").forEach(function(btn){
+      var isActive = btn.dataset.person === state.person;
+      btn.classList.toggle("active", isActive);
+    });
+
+    var listEl = $("list");
+    var items = (state.data[state.person] || []).slice();
+
+    if(state.sortMode === "hearts"){
+      items = items.map(function(item, idx){ return {item:item, idx:idx}; })
+        .sort(function(a,b){
+          if(b.item.hearts !== a.item.hearts) return b.item.hearts - a.item.hearts;
+          return a.idx - b.idx;
+        })
+        .map(function(pair){ return pair.item; });
+    }
+
+    listEl.innerHTML = "";
+
+    if(items.length === 0){
+      listEl.innerHTML = '<div class="empty"><span>🎀</span>Пока пусто.<br>Нажми «+» и добавь первое желание.</div>';
+      return;
+    }
+
+    items.forEach(function(item){
+      var tag = document.createElement("div");
+      tag.className = "tag";
+
+      var heartsHtml = "";
+      for(var i=1;i<=3;i++){ heartsHtml += heartsSvg(i <= item.hearts); }
+
+      var photoHtml = item.photo ? '<img class="tag-photo" src="'+item.photo+'" alt="">' : "";
+      var linkHtml = item.link ? '<a class="tag-link" href="'+escapeAttr(item.link)+'" target="_blank" rel="noopener">Открыть ссылку</a>' : "";
+
+      tag.innerHTML =
+        photoHtml +
+        '<div class="tag-body">' +
+          '<p class="tag-title">'+escapeHtml(item.title)+'</p>' +
+          '<div class="tag-hearts">'+heartsHtml+'</div>' +
+          linkHtml +
+        '</div>' +
+        '<div class="tag-actions">' +
+          '<button class="tag-edit" data-id="'+item.id+'" aria-label="Редактировать">' +
+            '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20h4L19.5 8.5a2 2 0 0 0 0-2.8l-1.2-1.2a2 2 0 0 0-2.8 0L4 16v4z"/><path d="M13.5 6.5l3 3"/></svg>' +
+          '</button>' +
+          '<button class="tag-del" data-id="'+item.id+'" aria-label="Удалить">' +
+            '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1L6 7"/></svg>' +
+          '</button>' +
+        '</div>';
+
+      listEl.appendChild(tag);
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function escapeAttr(s){ return escapeHtml(s); }
+
+  /* ---------------- interactions ---------------- */
+
+  document.querySelectorAll(".switch button").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      state.person = btn.dataset.person;
+      render();
+    });
+  });
+
+  $("list").addEventListener("click", function(e){
+    var editBtn = e.target.closest(".tag-edit");
+    if(editBtn){
+      openEditForm(editBtn.dataset.id);
+      return;
+    }
+    var delBtn = e.target.closest(".tag-del");
+    if(delBtn){
+      state.pendingDeleteId = delBtn.dataset.id;
+      $("confirmOverlay").classList.add("open");
+    }
+  });
+
+  $("confirmNo").addEventListener("click", function(){
+    state.pendingDeleteId = null;
+    $("confirmOverlay").classList.remove("open");
+  });
+  $("confirmOverlay").addEventListener("click", function(e){
+    if(e.target === $("confirmOverlay")){
+      state.pendingDeleteId = null;
+      $("confirmOverlay").classList.remove("open");
+    }
+  });
+  $("confirmYes").addEventListener("click", function(){
+    var id = state.pendingDeleteId;
+    if(!id) return;
+    state.data[state.person] = state.data[state.person].filter(function(w){ return w.id !== id; });
+    state.pendingDeleteId = null;
+    $("confirmOverlay").classList.remove("open");
+    pushRemote();
+    render();
+    toast("Удалено");
+  });
+
+  function openEditForm(id){
+    var item = state.data[state.person].find(function(w){ return w.id === id; });
+    if(!item) return;
+    state.editingId = id;
+    $("sheetTitle").textContent = "Редактировать желание";
+    $("saveWish").textContent = "Сохранить";
+    $("wishTitle").value = item.title;
+    $("wishLink").value = item.link || "";
+    state.photoData = item.photo || null;
+    if(item.photo){
+      $("photoPreview").src = item.photo;
+      $("photoPreview").style.display = "block";
+    } else {
+      $("photoPreview").style.display = "none";
+      $("photoPreview").src = "";
+    }
+    setHeartsPick(item.hearts);
+    $("overlay").classList.add("open");
+  }
+
+  $("sortSelect").addEventListener("change", function(){
+    state.sortMode = $("sortSelect").value;
+    render();
+  });
+
+  function resetForm(){
+    state.editingId = null;
+    $("sheetTitle").textContent = "Новое желание";
+    $("saveWish").textContent = "Добавить";
+    $("wishTitle").value = "";
+    $("wishLink").value = "";
+    $("photoInput").value = "";
+    $("photoPreview").style.display = "none";
+    $("photoPreview").src = "";
+    state.photoData = null;
+    setHeartsPick(1);
+  }
+
+  function setHeartsPick(v){
+    state.heartsPick = v;
+    document.querySelectorAll("#heartPicker button").forEach(function(b){
+      var val = parseInt(b.dataset.v, 10);
+      var path = b.querySelector("path");
+      if(val <= v){
+        path.setAttribute("fill", "#CB9A4E");
+        path.setAttribute("stroke", "#CB9A4E");
+      } else {
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", "#DDD1D8");
+      }
+    });
+  }
+
+  document.querySelectorAll("#heartPicker button").forEach(function(b){
+    b.addEventListener("click", function(){ setHeartsPick(parseInt(b.dataset.v,10)); });
+  });
+
+  $("fabAdd").addEventListener("click", function(){
+    resetForm();
+    $("overlay").classList.add("open");
+  });
+  $("cancelAdd").addEventListener("click", function(){
+    $("overlay").classList.remove("open");
+    resetForm();
+  });
+  $("overlay").addEventListener("click", function(e){
+    if(e.target === $("overlay")){
+      $("overlay").classList.remove("open");
+      resetForm();
+    }
+  });
+
+  $("photoInput").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      var img = new Image();
+      img.onload = function(){
+        var maxDim = 720;
+        var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        var w = Math.round(img.width * scale);
+        var h = Math.round(img.height * scale);
+        var canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        var out = canvas.toDataURL("image/jpeg", 0.7);
+        state.photoData = out;
+        $("photoPreview").src = out;
+        $("photoPreview").style.display = "block";
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  $("saveWish").addEventListener("click", function(){
+    var title = $("wishTitle").value.trim();
+    if(!title){
+      toast("Напиши, что хочется :)");
+      return;
+    }
+    var link = $("wishLink").value.trim() || null;
+    var photo = state.photoData || null;
+
+    if(state.editingId){
+      var idx = state.data[state.person].findIndex(function(w){ return w.id === state.editingId; });
+      if(idx !== -1){
+        state.data[state.person][idx].title = title;
+        state.data[state.person][idx].hearts = state.heartsPick;
+        state.data[state.person][idx].link = link;
+        state.data[state.person][idx].photo = photo;
+      }
+      toast("Изменения сохранены");
+    } else {
+      state.data[state.person].push({
+        id: uid(),
+        title: title,
+        hearts: state.heartsPick,
+        link: link,
+        photo: photo
+      });
+      toast("Добавлено 💫");
+    }
+
+    pushRemote();
+    render();
+    $("overlay").classList.remove("open");
+  });
+
+  $("copyLinkBtn").addEventListener("click", function(){
+    var url = location.href;
+    if(navigator.clipboard){
+      navigator.clipboard.writeText(url).then(function(){
+        toast("Ссылка скопирована");
+      }).catch(function(){ promptCopy(url); });
+    } else {
+      promptCopy(url);
+    }
+  });
+  function promptCopy(url){ prompt("Скопируйте ссылку:", url); }
+
+  $("dismissBanner").addEventListener("click", function(){
+    $("banner").classList.remove("show");
+  });
+
+  document.addEventListener("visibilitychange", function(){
+    var recentLocalWrite = (Date.now() - state.lastLocalWriteAt) < 4000;
+    if(document.visibilityState === "visible" && state.blobId && !recentLocalWrite){
+      fetchRemote();
+    }
+  });
+
+  /* ---------------- go ---------------- */
+  initStorage();
+
+})();
+</script>
+</body>
+</html>
