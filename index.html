@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Наш вишлист</title>
+<title>Вишлист</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -394,7 +394,7 @@
 
   <div class="banner" id="banner">
     <strong>Общий список пока не настроен 💌</strong>
-    1) Откройте jsonblob.com. 2) Вставьте туда <code>{"kiryusha":[],"lera":[]}</code> и нажмите Create/Save. 3) Скопируйте ID из адресной строки (после jsonblob.com/). 4) Вставьте его в файл сайта вместо PASTE_YOUR_JSONBLOB_ID_HERE. Пока это не сделано, желания сохраняются только в этом браузере.
+    1) Откройте jsonblob.com. 2) Вставьте туда <code>{"kiryusha":[],"lera":[]}</code> и нажмите Create/Save. 3) Скопируйте ID из адресной строки (после jsonblob.com/). 4) Вставьте его в файл сайта вместо https://jsonblob.com/01a095a3-0348-7179-905d-94413892a492/json. Пока это не сделано, желания сохраняются только в этом браузере.
     <div class="banner-actions">
       <button class="copy-btn" id="copyLinkBtn">Скопировать заготовку JSON</button>
       <button class="dismiss-btn" id="dismissBanner">Понятно</button>
@@ -487,7 +487,7 @@
 
   // Вставьте сюда ID общего блока данных, который вы создали на jsonblob.com
   // (инструкция — в баннере на странице, если оставить как есть).
-  var BLOB_ID = "PASTE_YOUR_JSONBLOB_ID_HERE";
+  var BLOB_ID = "https://jsonblob.com/01a095a3-0348-7179-905d-94413892a492/json";
 
   var state = {
     person: "lera",
@@ -538,7 +538,7 @@
     var cached = loadLocalCache();
     if(cached) state.data = cached;
 
-    if(!BLOB_ID || BLOB_ID === "PASTE_YOUR_JSONBLOB_ID_HERE"){
+    if(!BLOB_ID || BLOB_ID === "https://jsonblob.com/01a095a3-0348-7179-905d-94413892a492/json"){
       $("banner").classList.add("show");
       render();
       return;
