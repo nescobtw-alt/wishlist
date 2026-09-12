@@ -21,6 +21,8 @@
     --text-soft:#8B7A83;
     --gold:#CB9A4E;
     --gold-soft:#E7D3AE;
+    --green:#3D8B5D;
+    --green-soft:#E2F4E8;
     --lera:#E1748F;
     --lera-soft:#FBE3E9;
     --kir:#6E80B8;
@@ -175,8 +177,8 @@
   .tag-price{
     font-size:12.5px;
     font-weight:600;
-    color:var(--gold);
-    background:rgba(203,154,78,0.12);
+    color:var(--green);
+    background:var(--green-soft);
     padding:2px 6px;
     border-radius:6px;
   }
@@ -385,7 +387,7 @@
   .view-price{
     font-size:18px;
     font-weight:600;
-    color:var(--gold);
+    color:var(--green);
     margin-bottom:10px;
   }
   .view-hearts{
@@ -480,6 +482,7 @@
     <select id="sortSelect">
       <option value="hearts">Сначала сильные желания</option>
       <option value="price_asc">Сначала недорогие</option>
+      <option value="price_desc">Сначала дорогие</option>
       <option value="added">По порядку добавления</option>
     </select>
   </div>
@@ -510,8 +513,8 @@
       <input type="text" id="wishTitle" maxlength="120" placeholder="Например: тёплый шарф">
     </div>
     <div class="field">
-      <label for="wishPrice">Примерная цена (₽, необязательно)</label>
-      <input type="number" id="wishPrice" min="0" placeholder="Например: 2500">
+      <label for="wishPrice">Примерная цена (€, необязательно)</label>
+      <input type="number" id="wishPrice" min="0" placeholder="Например: 35">
     </div>
     <div class="field">
       <label>Насколько сильно</label>
@@ -566,10 +569,7 @@
 (function(){
   "use strict";
 
-  var API_BASE = "https://jsonblob.com/api/jsonBlob";
   var LS_CACHE_KEY = "wishlist_cache";
-
-  var BLOB_ID = "https://jsonblob.com/01a095a3-0348-7179-905d-94413892a492/json";
 
   var state = {
     person: "lera",
@@ -605,7 +605,7 @@
 
   function formatPrice(val){
     if(val === null || val === undefined || val === "" || isNaN(val)) return "";
-    return Number(val).toLocaleString('ru-RU') + " ₽";
+    return Number(val).toLocaleString('ru-RU') + " €";
   }
 
   /* ---------------- storage: Supabase ---------------- */
@@ -813,6 +813,15 @@
           var pA = (a.item.price !== null && a.item.price !== "" && !isNaN(a.item.price)) ? Number(a.item.price) : Infinity;
           var pB = (b.item.price !== null && b.item.price !== "" && !isNaN(b.item.price)) ? Number(b.item.price) : Infinity;
           if(pA !== pB) return pA - pB;
+          return a.idx - b.idx;
+        })
+        .map(function(pair){ return pair.item; });
+    } else if(state.sortMode === "price_desc"){
+      items = items.map(function(item, idx){ return {item:item, idx:idx}; })
+        .sort(function(a,b){
+          var pA = (a.item.price !== null && a.item.price !== "" && !isNaN(a.item.price)) ? Number(a.item.price) : -Infinity;
+          var pB = (b.item.price !== null && b.item.price !== "" && !isNaN(b.item.price)) ? Number(b.item.price) : -Infinity;
+          if(pA !== pB) return pB - pA;
           return a.idx - b.idx;
         })
         .map(function(pair){ return pair.item; });
@@ -1109,13 +1118,6 @@
 
   $("dismissBanner").addEventListener("click", function(){
     $("banner").classList.remove("show");
-  });
-
-  document.addEventListener("visibilitychange", function(){
-    var recentLocalWrite = (Date.now() - state.lastLocalWriteAt) < 4000;
-    if(document.visibilityState === "visible" && state.blobId && !recentLocalWrite){
-      fetchRemote();
-    }
   });
 
   /* ---------------- go ---------------- */
